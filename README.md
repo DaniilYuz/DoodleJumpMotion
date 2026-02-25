@@ -289,3 +289,90 @@ Client-side interface connecting players to the game microservices:
 - **Game Embedding**: Iframe game loader with seed/userId injection
 - **Real-time Proxy**: WebSocket message forwarding (game ↔ Session Service)
 - **Leaderboard**: Top players and personal rank display
+
+
+
+
+# Infrastructure & DevOps
+
+Docker Compose orchestration for the complete Doodle Jump microservices ecosystem with SSL/TLS termination, reverse proxy, and automated CI/CD deployment.
+
+## Architecture Overview
+┌─────────────────┐
+│   Cloudflare    │
+│  (DNS + Proxy)  │
+└────────┬────────┘
+│
+┌────────▼────────┐
+│   Nginx (SSL)   │◄── Let's Encrypt (certbot)
+│   443/80        │
+└────────┬────────┘
+│
+┌────┴────┬────────┬────────┬────────┬────────┐
+│         │        │        │        │        │
+┌───▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼────┐
+│Frontend│ │Game  │ │User  │ │Arena │ │Match │ │Session│
+│(static)│ │(prod)│ │Svc   │ │Svc   │ │maker │ │Svc    │
+└────────┘ └──────┘ └──┬───┘ └──┬───┘ └──┬───┘ └───┬───┘
+│        │        │         │
+┌────┴────────┴────────┴─────────┘
+│
+┌─────▼─────┐    ┌─────────┐
+│PostgreSQL │    │  Redis  │
+│ (x4 dbs)  │    │         │
+└───────────┘    └─────────┘
+│               │
+└────────┬──────┘
+│
+┌────▼────┐
+│  NATS   │
+│ (queue) │
+└─────────┘
+
+## Services Stack
+
+| Service | Image | Port | Purpose |
+|---------|-------|------|---------|
+| nginx-main | nginx:stable-alpine | 80, 443 | SSL termination, reverse proxy |
+| frontend | custom (static) | - | Website UI |
+| game-prod | custom (Expo web) | 8079 | Game client (iframe) |
+| user-service | Go build | 8080 | Auth, profiles, cups |
+| arenas-service | Go build | 8081 | Arena management |
+| session-service | Go build | 8083 | WebSocket game sessions |
+| matchmaker | Go build | 8084 | Matchmaking queue |
+| leaderboard-service | Go build | 8080 | Rankings |
+| postgres-* | postgres:16-alpine | 5432 | Per-service databases (x4) |
+| redis | redis:7-alpine | 6379 | Matchmaking queue cache |
+| nats | nats:alpine | 4222 | Event bus |
+| certbot | certbot/certbot | - | Let's Encrypt auto-renewal |
+
+## Nginx Gateway Routing
+
+| Location | Upstream | Description |
+|----------|----------|-------------|
+| `/` | frontend:80 | Main website |
+| `/game-view/` | game-prod:80 | Game iframe |
+| `/api/user/` | user-service:8080 | User API |
+| `/api/arena/` | arenas-service:8081 | Arena API |
+| `/api/session/` | session-service:8083 | Session API |
+| `/api/matchmaker/` | matchmaker:8084 | Matchmaking API |
+| `/api/leaderboard/` | leaderboard-service:8080 | Leaderboard API |
+| `/ws` | session-service:8083 | WebSocket (upgrade headers) |
+
+## SSL/TLS Configuration
+
+- **Domain**: `164-68-111-100.sslip.io`
+- **Certificates**: Let's Encrypt (certbot)
+- **Auto-renewal**: Every 12 hours
+- **HTTPS redirect**: All HTTP → HTTPS
+- **WebSocket**: WSS support with upgrade headers
+
+### Certbot Setup
+
+```yaml
+certbot:
+  image: certbot/certbot
+  volumes:
+    - ./certbot/conf:/etc/letsencrypt
+    - ./certbot/www:/var/www/certbot
+  entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
