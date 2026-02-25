@@ -297,38 +297,6 @@ Client-side interface connecting players to the game microservices:
 
 Docker Compose orchestration for the complete Doodle Jump microservices ecosystem with SSL/TLS termination, reverse proxy, and automated CI/CD deployment.
 
-## Architecture Overview
-┌─────────────────┐
-│   Cloudflare    │
-│  (DNS + Proxy)  │
-└────────┬────────┘
-│
-┌────────▼────────┐
-│   Nginx (SSL)   │◄── Let's Encrypt (certbot)
-│   443/80        │
-└────────┬────────┘
-│
-┌────┴────┬────────┬────────┬────────┬────────┐
-│         │        │        │        │        │
-┌───▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼────┐
-│Frontend│ │Game  │ │User  │ │Arena │ │Match │ │Session│
-│(static)│ │(prod)│ │Svc   │ │Svc   │ │maker │ │Svc    │
-└────────┘ └──────┘ └──┬───┘ └──┬───┘ └──┬───┘ └───┬───┘
-│        │        │         │
-┌────┴────────┴────────┴─────────┘
-│
-┌─────▼─────┐    ┌─────────┐
-│PostgreSQL │    │  Redis  │
-│ (x4 dbs)  │    │         │
-└───────────┘    └─────────┘
-│               │
-└────────┬──────┘
-│
-┌────▼────┐
-│  NATS   │
-│ (queue) │
-└─────────┘
-
 ## Services Stack
 
 | Service | Image | Port | Purpose |
