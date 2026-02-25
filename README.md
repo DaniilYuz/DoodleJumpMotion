@@ -344,3 +344,7 @@ certbot:
     - ./certbot/conf:/etc/letsencrypt
     - ./certbot/www:/var/www/certbot
   entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+```
+
+CI/CD Pipeline
+Automated deployment to VPS via GitHub Actions
