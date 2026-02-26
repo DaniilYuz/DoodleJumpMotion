@@ -18,13 +18,13 @@ Interactive multiplayer browser game controlled by body movements via webcam. Ph
 
 **Microservices ecosystem with 5 core services:**
 
-| Service                 |  Responsibility              | Key Features |
-
-| **User Service**        | Authentication & progression | JWT auth, bcrypt, cup-based arena unlock (1-10), role management (player/admin) |
-| **Arena Service**       | Arena configuration          | CRUD arenas, cup-range validation, theme management |
-| **Matchmaking Service** | 1v1 pairing                  | Redis Sorted Sets queue, ±100 cup matching, 50ms scan interval, NATS events |
-| **Session Service**     | Real-time gameplay           | WebSocket hub, game lifecycle (waiting→active→finished), score/death sync, cup calculation |
-| **Leaderboard Service** | Global rankings              | Redis ZSET for speed, PostgreSQL for persistence, top/rank queries |
+| Service | Responsibility | Key Features |
+|:---|:---|:---|
+| **User Service** | Authentication & progression | JWT auth, bcrypt, cup-based arena unlock (1-10), role management (player/admin) |
+| **Arena Service** | Arena configuration | CRUD arenas, cup-range validation, theme management |
+| **Matchmaking Service** | 1v1 pairing | Redis Sorted Sets queue, ±100 cup matching, 50ms scan interval, NATS events |
+| **Session Service** | Real-time gameplay | WebSocket hub, game lifecycle (waiting→active→finished), score/death sync, cup calculation |
+| **Leaderboard Service** | Global rankings | Redis ZSET for speed, PostgreSQL for persistence, top/rank queries |
 
 ## Game Flow
 
