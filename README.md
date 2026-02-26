@@ -1,5 +1,85 @@
 
 <img width="5023" height="3407" alt="DoodleJumpMotionScheme" src="https://github.com/user-attachments/assets/007d9a84-5814-4846-9278-cc9f66aa212b" />
+# Doodle Jump Motion
+
+Interactive multiplayer browser game controlled by body movements via webcam. Physical jump = character jump, lean left/right = movement. 1v1 competitive matches with deterministic platform generation for fair play.
+
+## Tech Stack
+
+| Layer | Technologies |
+|:---|:---|
+| **Frontend** | TypeScript (React Native Web), JavaScript, HTML, CSS, Expo |
+| **Backend** | Go (Gin, GORM, Gorilla WebSocket) |
+| **Database** | PostgreSQL (4 instances), Redis, NATS |
+| **Protocols** | HTTP/REST, WebSocket (WS/WSS), JWT (HS256) |
+| **Infrastructure** | Docker Compose, Nginx (SSL), Let's Encrypt, CI/CD |
+
+## System Architecture
+
+**Microservices ecosystem with 5 core services:**
+
+| Service                 |  Responsibility              | Key Features |
+
+| **User Service**        | Authentication & progression | JWT auth, bcrypt, cup-based arena unlock (1-10), role management (player/admin) |
+| **Arena Service**       | Arena configuration          | CRUD arenas, cup-range validation, theme management |
+| **Matchmaking Service** | 1v1 pairing                  | Redis Sorted Sets queue, ±100 cup matching, 50ms scan interval, NATS events |
+| **Session Service**     | Real-time gameplay           | WebSocket hub, game lifecycle (waiting→active→finished), score/death sync, cup calculation |
+| **Leaderboard Service** | Global rankings              | Redis ZSET for speed, PostgreSQL for persistence, top/rank queries |
+
+## Game Flow
+
+1. **Authentication** → User Service issues JWT
+2. **Arena Selection** → Based on cup count (0-499 = Arena 1, ..., 4500+ = Arena 10)
+3. **Matchmaking** → Join queue → Redis ZADD → Scanner finds pair → Create session → Return seed + session_id
+4. **Gameplay** → WebSocket connection → Seed sync → Real-time pose detection → Score/death broadcast → Session finalization
+5. **Progression** → Cup transfer (winner +25-35, loser -25-35) → Leaderboard sync
+
+## Key Technical Solutions
+
+| Challenge | Solution |
+|:---|:---|
+| Body motion control | MediaPipe Pose Landmarker (33 landmarks, torso tracking) |
+| Fair competition | SeededRandom LCG (16807, 2147483647) for identical platform layouts |
+| 60fps animations | React Native Reanimated SharedValues |
+| Real-time sync | WebSocket hub with mutex-safe room management |
+| Secure camera | HTTPS/WSS mandatory via Nginx + Let's Encrypt |
+
+## Infrastructure
+
+- **Docker Compose:** 15+ containers (5 services + 4 PostgreSQL + Redis + NATS + Nginx + Certbot + Frontend + Game)
+- **SSL/TLS:** Let's Encrypt auto-renewal for camera access permissions
+- **CI/CD:** Automated VPS deployment via GitHub Actions/GitLab CI
+- **Networking:** doodle_net bridge, internal service discovery
+
+## Communication Patterns
+
+| Pattern | Implementation |
+|:---|:---|
+| Client→Server | HTTPS via Nginx reverse proxy |
+| Real-time game | WSS WebSocket through Session Service |
+| Service→Service | HTTP with Admin JWT or INTERNAL_API_TOKEN |
+| Async events | NATS pub/sub (match.found, session.created) |
+| Caching | Redis (matchmaking queues, leaderboard ZSET) |
+| Persistence | PostgreSQL per service |
+
+## Security
+
+- JWT HS256 with 72h expiration (player) / eternal (admin)
+- Role-based access control (player/admin)
+- Internal API tokens for service mesh
+- Database credentials via environment variables
+- SSL termination at Nginx, WSS for all real-time traffic
+
+## Deployment
+
+```bash
+# Single command production deployment
+docker-compose up -d
+```
+
+
+
+
 
 # Arena Service
 
