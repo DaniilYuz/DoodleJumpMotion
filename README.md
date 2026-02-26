@@ -1,4 +1,5 @@
 
+<img width="5023" height="3407" alt="DoodleJumpMotionScheme" src="https://github.com/user-attachments/assets/007d9a84-5814-4846-9278-cc9f66aa212b" />
 
 # Arena Service
 
